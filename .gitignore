@@ -27,5 +27,8 @@ target/*
 hs_err_pid*
 replay_pid*
 
+# environment files
+.env
+
 # mac files
 .DS_Store
