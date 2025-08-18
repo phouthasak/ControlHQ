@@ -1,5 +1,12 @@
 package com.phouthasak.controlHQ.service.kasa;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phouthasak.controlHQ.domain.kasa.KasaPayloadBuilder;
+import com.phouthasak.controlHQ.model.dto.KasaDto;
+import com.phouthasak.controlHQ.model.dto.KasaSmartPlugSystemInfoResponse;
+import com.phouthasak.controlHQ.model.dto.KasaSmartPlugSystemInfoResponse.Device;
+import com.phouthasak.controlHQ.model.dto.KasaSmartPlugSystemInfoResponse.DeviceInfo;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +17,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 @Service
 public class KasaService {
@@ -17,11 +25,36 @@ public class KasaService {
     private static final int TIMEOUT_MS = 5000;
     private static final int PAYLOAD_LOWER_LIMIT = 0;
     private static final int PAYLOAD_UPPER_LIMIT = 65536;
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     @Value("${KASA_SMART_PLUG_IP}")
     private String KASA_SMART_PLUG_IP;
 
-    public String sendCommand(String command) throws IOException {
+    public DeviceInfo getDeviceInfo() {
+        try {
+            String payload = KasaPayloadBuilder.getDeviceInfoPayload();
+            String result = sendCommand(payload);
+            DeviceInfo deviceInfo = parseSystemInfoResponse(result);
+            return deviceInfo;
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return null;
+    }
+
+    public DeviceInfo setRelayState(KasaDto dto) {
+        try {
+            String payload = KasaPayloadBuilder.getReplayStatePayload(Objects.nonNull(dto) && dto.getRelayState());
+            sendCommand(payload);
+            return getDeviceInfo();
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private String sendCommand(String command) throws IOException {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(KASA_SMART_PLUG_IP, KASA_PORT), TIMEOUT_MS);
             socket.setSoTimeout(TIMEOUT_MS);
@@ -69,6 +102,37 @@ public class KasaService {
                 e.printStackTrace();
             }
         } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
+    }
+
+    private DeviceInfo parseSystemInfoResponse(String response) {
+        try {
+            JsonNode rootNode = mapper.readTree(response);
+            JsonNode systemInfoNode = rootNode.path("system").path("get_sysinfo");
+
+            if (systemInfoNode.isMissingNode()) {
+                return null;
+            }
+
+            Device device = Device.builder()
+                    .deviceId(systemInfoNode.path("deviceId").asText(null))
+                    .model(systemInfoNode.path("model").asText(null))
+                    .name(systemInfoNode.path("alias").asText(null))
+                    .latitude(systemInfoNode.path("latitude_i").asLong(0))
+                    .longitude(systemInfoNode.path("longitude_i").asLong(0))
+                    .relayState(systemInfoNode.path("relay_state").asInt())
+                    .build();
+
+            DeviceInfo deviceInfo = DeviceInfo.builder()
+                    .device(device)
+                    .errorCode(systemInfoNode.path("err_code").asInt())
+                    .build();
+
+            return deviceInfo;
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
 
