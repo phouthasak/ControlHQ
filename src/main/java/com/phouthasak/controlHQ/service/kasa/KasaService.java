@@ -3,10 +3,12 @@ package com.phouthasak.controlHQ.service.kasa;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.phouthasak.controlHQ.domain.kasa.KasaPayloadBuilder;
-import com.phouthasak.controlHQ.model.dto.KasaDto;
-import com.phouthasak.controlHQ.model.dto.KasaSmartPlugSystemInfoResponse;
-import com.phouthasak.controlHQ.model.dto.KasaSmartPlugSystemInfoResponse.Device;
-import com.phouthasak.controlHQ.model.dto.KasaSmartPlugSystemInfoResponse.DeviceInfo;
+import com.phouthasak.controlHQ.exception.InternalException;
+import com.phouthasak.controlHQ.exception.InvalidException;
+import com.phouthasak.controlHQ.model.dto.kasa.Device;
+import com.phouthasak.controlHQ.model.dto.kasa.KasaDto;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,9 +19,15 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
+@Slf4j
 public class KasaService {
     private static final int KASA_PORT = 9999;
     private static final int TIMEOUT_MS = 5000;
@@ -27,36 +35,84 @@ public class KasaService {
     private static final int PAYLOAD_UPPER_LIMIT = 65536;
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    @Value("${KASA_SMART_PLUG_IP}")
-    private String KASA_SMART_PLUG_IP;
+    @Value("${KASA_SMART_PLUG_IPS}")
+    private String KASA_SMART_PLUG_IPS;
 
-    public DeviceInfo getDeviceInfo() {
+    private Map<String, String> deviceMap;
+
+    @PostConstruct
+    private void init() {
+        deviceMap = new HashMap<>();
+        List<String> deviceIps = Arrays.asList(KASA_SMART_PLUG_IPS.split(","));
+
+        for (String deviceIp : deviceIps) {
+            Device device = null;
+            try {
+                String result = sendCommand(deviceIp, KasaPayloadBuilder.getDeviceInfoPayload());
+                device = parseSystemInfoResponse(result);
+            } catch (IOException ex) {
+                log.error("Error setting up device info map: " + deviceIp, ex);
+            }
+
+            if (Objects.nonNull(device)) {
+                deviceMap.put(device.getId(), deviceIp);
+            }
+        }
+    }
+
+    public List<Device> listDevices() {
+        List<Device> deviceInfos = new ArrayList<>();
+
+        try {
+            List<String> deviceIds = new ArrayList<>(deviceMap.keySet());
+            for (String deviceId : deviceIds) {
+                Device device = getDevice(deviceId);
+                deviceInfos.add(device);
+            }
+        } catch (Exception ex) {
+            log.error("Error getting list of devices: ", ex);
+        }
+
+        return deviceInfos;
+    }
+
+    public Device getDevice(String deviceId) {
         try {
             String payload = KasaPayloadBuilder.getDeviceInfoPayload();
-            String result = sendCommand(payload);
-            DeviceInfo deviceInfo = parseSystemInfoResponse(result);
-            return deviceInfo;
-        } catch (Exception exception) {
-            exception.printStackTrace();
+            String ip = deviceMap.get(deviceId);
+
+            if (ip == null) {
+                throw new InvalidException("Invalid Device");
+            }
+
+            String result = sendCommand(ip, payload);
+            return parseSystemInfoResponse(result);
+        } catch (IOException ex) {
+            log.error("Error getting device info: " + deviceId, ex);
+            throw new InternalException("Internal Error");
         }
-        return null;
     }
 
-    public DeviceInfo setRelayState(KasaDto dto) {
+    public Device setRelayState(String deviceId, KasaDto dto) {
+        if (!deviceMap.containsKey(deviceId)) {
+            throw new InvalidException("Invalid Device");
+        }
+
         try {
             String payload = KasaPayloadBuilder.getReplayStatePayload(Objects.nonNull(dto) && dto.getRelayState());
-            sendCommand(payload);
-            return getDeviceInfo();
+            String ip = deviceMap.get(deviceId);
+            sendCommand(ip, payload);
         } catch (Exception exception) {
-            exception.printStackTrace();
+            throw new InternalException("Error setting relay");
         }
 
-        return null;
+        Device deviceInfo = getDevice(deviceId);
+        return deviceInfo;
     }
 
-    private String sendCommand(String command) throws IOException {
+    private String sendCommand(String ip, String command) throws IOException {
         try (Socket socket = new Socket()) {
-            socket.connect(new InetSocketAddress(KASA_SMART_PLUG_IP, KASA_PORT), TIMEOUT_MS);
+            socket.connect(new InetSocketAddress(ip, KASA_PORT), TIMEOUT_MS);
             socket.setSoTimeout(TIMEOUT_MS);
 
             OutputStream out = socket.getOutputStream();
@@ -91,7 +147,9 @@ public class KasaService {
                 bytesRead = 0;
                 while(bytesRead < payloadLength) {
                     int read = in.read(payload, bytesRead, payloadLength);
-                    if (read == -1) throw new IOException("Connection closed while reading payload");
+                    if (read == -1) {
+                        throw new IOException("Connection closed while reading payload");
+                    }
                     bytesRead += read;
                 }
 
@@ -99,16 +157,16 @@ public class KasaService {
                 response.write(payload);
                 return decrypt(response.toByteArray());
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Error occur while trying to read from output");
+                throw new IOException("Error occur while trying to read from output");
             }
         } catch (IOException ex) {
-            ex.printStackTrace();
+            log.error("Error occur while trying to communicate with device");
+            throw new IOException("Error occur while trying to communicate with device");
         }
-
-        return null;
     }
 
-    private DeviceInfo parseSystemInfoResponse(String response) {
+    private Device parseSystemInfoResponse(String response) {
         try {
             JsonNode rootNode = mapper.readTree(response);
             JsonNode systemInfoNode = rootNode.path("system").path("get_sysinfo");
@@ -118,22 +176,18 @@ public class KasaService {
             }
 
             Device device = Device.builder()
-                    .deviceId(systemInfoNode.path("deviceId").asText(null))
+                    .id(systemInfoNode.path("deviceId").asText(null))
                     .model(systemInfoNode.path("model").asText(null))
                     .name(systemInfoNode.path("alias").asText(null))
                     .latitude(systemInfoNode.path("latitude_i").asLong(0))
                     .longitude(systemInfoNode.path("longitude_i").asLong(0))
                     .relayState(systemInfoNode.path("relay_state").asInt())
-                    .build();
-
-            DeviceInfo deviceInfo = DeviceInfo.builder()
-                    .device(device)
                     .errorCode(systemInfoNode.path("err_code").asInt())
                     .build();
 
-            return deviceInfo;
+            return device;
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.info("Error parsing kasa response");
         }
 
         return null;

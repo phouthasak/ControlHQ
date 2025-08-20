@@ -1,4 +1,4 @@
-package com.phouthasak.controlHQ.model.dto;
+package com.phouthasak.controlHQ.model.dto.kasa;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
