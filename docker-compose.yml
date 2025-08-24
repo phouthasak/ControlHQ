@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  control-hq-app:
+    build: .
+    container_name: control-hq
+    ports:
+      - "8080:8080"
+    environment:
+      KASA_SMART_PLUG_IPS: ${KASA_SMART_PLUG_IPS}
+    restart: unless-stopped
