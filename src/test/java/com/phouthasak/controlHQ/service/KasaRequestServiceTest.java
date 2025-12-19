@@ -1,6 +1,6 @@
 package com.phouthasak.controlHQ.service;
 
-import com.phouthasak.controlHQ.model.dto.kasa.Device;
+import com.phouthasak.controlHQ.model.dto.Device;
 import com.phouthasak.controlHQ.service.kasa.KasaRequestService;
 import com.phouthasak.controlHQ.service.kasa.SocketFactory;
 import com.phouthasak.controlHQ.util.KasaCipher;

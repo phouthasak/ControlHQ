@@ -3,17 +3,16 @@ package com.phouthasak.controlHQ.service.kasa;
 import com.phouthasak.controlHQ.domain.kasa.KasaPayloadBuilder;
 import com.phouthasak.controlHQ.exception.InternalException;
 import com.phouthasak.controlHQ.exception.InvalidException;
-import com.phouthasak.controlHQ.model.dto.kasa.Device;
+import com.phouthasak.controlHQ.model.dto.Device;
 import com.phouthasak.controlHQ.model.dto.kasa.KasaDto;
+import com.phouthasak.controlHQ.service.EnvironmentService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,10 +21,10 @@ import java.util.Objects;
 @Service
 @Slf4j
 public class KasaService {
-    @Value("${KASA_SMART_PLUG_IPS}")
-    private String KASA_SMART_PLUG_IPS;
-
     private Map<String, String> deviceMap;
+
+    @Autowired
+    private EnvironmentService environmentService;
 
     @Autowired
     private KasaRequestService kasaRequestService;
@@ -33,7 +32,7 @@ public class KasaService {
     @PostConstruct
     private void init() {
         deviceMap = new HashMap<>();
-        List<String> deviceIps = Arrays.asList(KASA_SMART_PLUG_IPS.split(","));
+        List<String> deviceIps = environmentService.getKasaIps();
 
         for (String deviceIp : deviceIps) {
             Device device = null;

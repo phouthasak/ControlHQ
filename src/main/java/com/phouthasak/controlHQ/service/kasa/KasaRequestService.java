@@ -3,7 +3,8 @@ package com.phouthasak.controlHQ.service.kasa;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.phouthasak.controlHQ.model.dto.kasa.Device;
+import com.phouthasak.controlHQ.domain.DeviceType;
+import com.phouthasak.controlHQ.model.dto.Device;
 import com.phouthasak.controlHQ.util.KasaCipher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +15,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -87,7 +89,9 @@ public class KasaRequestService {
             }
 
             Device device = Device.builder()
-                    .id(systemInfoNode.path("deviceId").asText(null))
+                    .id(UUID.randomUUID().toString())
+                    .type(DeviceType.PLUG)
+                    .externalId(systemInfoNode.path("deviceId").asText(null))
                     .model(systemInfoNode.path("model").asText(null))
                     .name(systemInfoNode.path("alias").asText(null))
                     .latitude(systemInfoNode.path("latitude_i").asLong(0))

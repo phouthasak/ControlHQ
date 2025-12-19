@@ -1,6 +1,6 @@
 package com.phouthasak.controlHQ.controller;
 
-import com.phouthasak.controlHQ.model.dto.kasa.Device;
+import com.phouthasak.controlHQ.model.dto.Device;
 import com.phouthasak.controlHQ.model.dto.kasa.KasaDto;
 import com.phouthasak.controlHQ.service.kasa.KasaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,22 +13,13 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/kasa/devices")
+@RequestMapping("/api/v1/devices/kasa")
 public class KasaController {
     @Autowired
     private KasaService kasaService;
-
-    @RequestMapping(value = "", method = RequestMethod.GET)
-    public ResponseEntity getDevices() {
-        List<Device> devices = kasaService.listDevices();
-        Map<String, Object> responseMap = new HashMap<>();
-        responseMap.put("devices", devices);
-        return ResponseEntity.status(HttpStatus.OK).body(responseMap);
-    }
 
     @RequestMapping(value = "/{deviceId}", method = RequestMethod.GET)
     public ResponseEntity getDevice(@PathVariable("deviceId") String deviceId) {

@@ -2,7 +2,7 @@ package com.phouthasak.controlHQ.service;
 
 import com.phouthasak.controlHQ.exception.InternalException;
 import com.phouthasak.controlHQ.exception.InvalidException;
-import com.phouthasak.controlHQ.model.dto.kasa.Device;
+import com.phouthasak.controlHQ.model.dto.Device;
 import com.phouthasak.controlHQ.model.dto.kasa.KasaDto;
 import com.phouthasak.controlHQ.service.kasa.KasaRequestService;
 import com.phouthasak.controlHQ.service.kasa.KasaService;
