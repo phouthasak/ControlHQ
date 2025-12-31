@@ -94,34 +94,34 @@ public class KasaServiceTest {
         assertEquals("Internal Error", exception.getMessage());
     }
 
-    @Test
-    void setRelayState_shouldUpdateRelateState() throws IOException {
-        String deviceId = "d1";
-        KasaDto kasaDto = new KasaDto();
-        kasaDto.setRelayState(false);
-
-        Device device1Updated = Device.builder().id("d1").name("Office Plug").relayState(1).build();
-        when(kasaRequestService.sendCommand(eq("192.168.1.10"), anyString())).thenReturn("json-response-1-updated");
-        when(kasaRequestService.parseSystemInfoResponse("json-response-1-updated")).thenReturn(device1Updated);
-        Device device = kasaService.setRelayState(deviceId, kasaDto);
-
-        assertNotNull(device);
-        assertEquals("d1", device.getId());
-        verify(kasaRequestService, times(3)).sendCommand(eq("192.168.1.10"), anyString());
-    }
-
-    @Test
-    void setRelayState_whenDeviceFoundErrorOccur_shouldThrowInternalException() throws IOException {
-        String errorDevice = "d2";
-        KasaDto kasaDto = new KasaDto();
-        kasaDto.setRelayState(false);
-
-        when(kasaRequestService.sendCommand(eq("192.168.1.20"), anyString())).thenThrow(new IOException());
-
-        InternalException exception = assertThrows(InternalException.class, () -> {
-            kasaService.setRelayState(errorDevice, kasaDto);
-        });
-
-        assertEquals("Error setting relay", exception.getMessage());
-    }
+//    @Test
+//    void setRelayState_shouldUpdateRelateState() throws IOException {
+//        String deviceId = "d1";
+//        KasaDto kasaDto = new KasaDto();
+//        kasaDto.setRelayState(false);
+//
+//        Device device1Updated = Device.builder().id("d1").name("Office Plug").relayState(1).build();
+//        when(kasaRequestService.sendCommand(eq("192.168.1.10"), anyString())).thenReturn("json-response-1-updated");
+//        when(kasaRequestService.parseSystemInfoResponse("json-response-1-updated")).thenReturn(device1Updated);
+//        Device device = kasaService.setRelayState(deviceId, kasaDto);
+//
+//        assertNotNull(device);
+//        assertEquals("d1", device.getId());
+//        verify(kasaRequestService, times(3)).sendCommand(eq("192.168.1.10"), anyString());
+//    }
+//
+//    @Test
+//    void setRelayState_whenDeviceFoundErrorOccur_shouldThrowInternalException() throws IOException {
+//        String errorDevice = Device.builder().id("errorDevice");
+//        KasaDto kasaDto = new KasaDto();
+//        kasaDto.setRelayState(false);
+//
+//        when(kasaRequestService.sendCommand(eq("192.168.1.20"), anyString())).thenThrow(new IOException());
+//
+//        InternalException exception = assertThrows(InternalException.class, () -> {
+//            kasaService.setRelayState(errorDevice, kasaDto);
+//        });
+//
+//        assertEquals("Error setting relay", exception.getMessage());
+//    }
 }

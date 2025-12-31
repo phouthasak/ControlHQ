@@ -2,6 +2,7 @@ package com.phouthasak.controlHQ.controller;
 
 import com.phouthasak.controlHQ.model.dto.Device;
 import com.phouthasak.controlHQ.model.dto.kasa.KasaDto;
+import com.phouthasak.controlHQ.service.DeviceManagementService;
 import com.phouthasak.controlHQ.service.kasa.KasaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,19 +22,15 @@ public class KasaController {
     @Autowired
     private KasaService kasaService;
 
-    @RequestMapping(value = "/{deviceId}", method = RequestMethod.GET)
-    public ResponseEntity getDevice(@PathVariable("deviceId") String deviceId) {
-        Device device = kasaService.getDevice(deviceId);
-        Map<String, Object> responseMap = new HashMap<>();
-        responseMap.put("device", device);
-        return ResponseEntity.status(HttpStatus.OK).body(responseMap);
-    }
-
+    @Autowired
+    private DeviceManagementService deviceManagementService;
 
     @RequestMapping(value = "/{deviceId}", method = RequestMethod.POST)
     public ResponseEntity setRelayStat(@PathVariable("deviceId") String deviceId,
                                        @RequestBody KasaDto kasaDto) {
-        Device device = kasaService.setRelayState(deviceId, kasaDto);
+        Device device = deviceManagementService.getDeviceInfo(deviceId);
+        device = kasaService.setRelayState(device, kasaDto);
+        device = deviceManagementService.updateDevice(device);
         Map<String, Object> responseMap = new HashMap<>();
         responseMap.put("device", device);
         return ResponseEntity.status(HttpStatus.OK).body(responseMap);

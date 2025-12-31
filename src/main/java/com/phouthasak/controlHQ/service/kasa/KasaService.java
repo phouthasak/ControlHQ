@@ -82,20 +82,20 @@ public class KasaService {
         }
     }
 
-    public Device setRelayState(String deviceId, KasaDto dto) {
-        if (!deviceMap.containsKey(deviceId)) {
+    public Device setRelayState(Device device, KasaDto dto) {
+        if (Objects.isNull(device) || !deviceMap.containsKey(device.getId())) {
             throw new InvalidException("Invalid Device");
         }
 
         try {
             String payload = KasaPayloadBuilder.getReplayStatePayload(Objects.nonNull(dto) && dto.getRelayState());
-            String ip = deviceMap.get(deviceId);
+            String ip = deviceMap.get(device.getId());
             kasaRequestService.sendCommand(ip, payload);
         } catch (Exception exception) {
             throw new InternalException("Error setting relay");
         }
 
-        Device deviceInfo = getDevice(deviceId);
-        return deviceInfo;
+        device = getDevice(device.getId());
+        return device;
     }
 }
