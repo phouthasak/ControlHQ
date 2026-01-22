@@ -29,6 +29,7 @@ public class TapoService {
 //    private volatile boolean isCapturing = false;
     private static final int RTSP_PORT = 554;
     private static final String DEFAULT_RTSP_URL = "rtsp://%s:%s@%s:%d/stream1";
+    private static final int TIMEOUT_MS = 5000;
 
     @PostConstruct
     private void init() {
@@ -40,7 +41,12 @@ public class TapoService {
             Device device = null;
             try {
                 TapoDeviceInfo tapoDeviceInfo = getDeviceInfo(account);
-                device = tapoDeviceInfo.toDevice();
+
+                if (tapoDeviceInfo != null) {
+                    device = tapoDeviceInfo.toDevice();
+                } else {
+                    log.error("Error setting up device info map: " + account.getIp());
+                }
             } catch (Exception ex) {
                 log.error("Error setting up device info map: " + account.getIp(), ex);
             }
@@ -81,6 +87,14 @@ public class TapoService {
 
         try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(rtspUrl)) {
             grabber.setOption("rtsp_transport", "tcp");
+            // Calculate timeout in microseconds (5000ms * 1000 = 5,000,000us)
+            String timeoutUs = String.valueOf(TIMEOUT_MS * 1000);
+            grabber.setOption("stimeout", timeoutUs);
+            grabber.setOption("rw_timeout", timeoutUs);
+            grabber.setOption("timeout", timeoutUs);
+            grabber.setOption("analyzeduration", "2000000");
+            grabber.setOption("probesize", "1000000");
+            grabber.setTimeout(TIMEOUT_MS);
             grabber.start();
 
             log.info("Camera connected successfully!: " + tapoAccount.getIp());
