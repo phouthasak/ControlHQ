@@ -31,13 +31,16 @@ public class KasaServiceTest {
     @Mock
     private KasaRequestService kasaRequestService;
 
+    @Mock
+    private EnvironmentService environmentService;
+
     @InjectMocks
     private KasaService kasaService;
 
     @BeforeEach
     public void setup() throws IOException {
-        String mockIps = "192.168.1.10,192.168.1.20";
-        ReflectionTestUtils.setField(kasaService, "KASA_SMART_PLUG_IPS", mockIps);
+        List<String> mockIps = List.of("192.168.1.10", "192.168.1.20");
+        when(environmentService.getKasaIps()).thenReturn(mockIps);
 
         Device device1 = Device.builder().id("d1").relayState(0).name("Office Plug").build();
         when(kasaRequestService.sendCommand(eq("192.168.1.10"), anyString())).thenReturn("json-response-1");

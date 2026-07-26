@@ -25,6 +25,8 @@ public class TransactionFilter extends OncePerRequestFilter {
 
         try {
             filterChain.doFilter(request, response);
+        } catch (Exception e) {
+          throw e;
         } finally {
             MDC.remove(TRANSACTION_ID_KEY);
         }

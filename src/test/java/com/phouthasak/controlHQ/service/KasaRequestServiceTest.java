@@ -94,7 +94,7 @@ class KasaRequestServiceTest {
         String validResponse = "{\"system\":{\"get_sysinfo\":{\"err_code\":0,\"deviceId\":\"test-id\",\"alias\":\"Test Plug\",\"model\":\"HS100(US)\",\"relay_state\":1}}}";
         Device device = kasaRequestService.parseSystemInfoResponse(validResponse);
         assertNotNull(device);
-        assertEquals("test-id", device.getId());
+        assertEquals("test-id", device.getExternalId());
         assertEquals("Test Plug", device.getName());
         assertEquals("HS100(US)", device.getModel());
         assertEquals(1, device.getRelayState());

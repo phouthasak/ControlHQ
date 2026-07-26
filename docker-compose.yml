@@ -7,9 +7,15 @@ services:
     ports:
       - "8080:8080"
     environment:
-      KASA_SMART_PLUG_IPS: ${KASA_SMART_PLUG_IPS}
-      TAPO_CAMERAS_IPS: ${TAPO_CAMERAS_IPS}
-      TAPO_DEVICE_NAS_ACCOUNT_NAME: ${TAPO_DEVICE_NAS_ACCOUNT_NAME}
-      TAPO_DEVICE_NAS_ACCOUNT_PWD: ${TAPO_DEVICE_NAS_ACCOUNT_PWD}
+#      KASA_SMART_PLUG_IPS: ${KASA_SMART_PLUG_IPS}
+#      TAPO_CAMERAS_IPS: ${TAPO_CAMERAS_IPS}
+#      TAPO_DEVICE_NAS_ACCOUNT_NAME: ${TAPO_DEVICE_NAS_ACCOUNT_NAME}
+#      TAPO_DEVICE_NAS_ACCOUNT_PWD: ${TAPO_DEVICE_NAS_ACCOUNT_PWD}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+    secrets:
+      - jwt_secret
     restart: unless-stopped
+
+secrets:
+  jwt_secret:
+      file: ./jwt_secret.txt

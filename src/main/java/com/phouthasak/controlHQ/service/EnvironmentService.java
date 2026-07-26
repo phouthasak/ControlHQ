@@ -3,6 +3,7 @@ package com.phouthasak.controlHQ.service;
 import com.phouthasak.controlHQ.domain.tapo.TapoAccount;
 import com.phouthasak.controlHQ.util.Constants;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -14,17 +15,18 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class EnvironmentService {
-    @Value("${KASA_SMART_PLUG_IPS}")
+    @Value("${KASA_SMART_PLUG_IPS:}")
     private String KASA_SMART_PLUG_IPS;
 
-    @Value("${TAPO_CAMERAS_IPS}")
+    @Value("${TAPO_CAMERAS_IPS:}")
     private String TAPO_CAMERAS_IPS;
 
-    @Value("${TAPO_DEVICE_NAS_ACCOUNT_NAME}")
+    @Value("${TAPO_DEVICE_NAS_ACCOUNT_NAME:}")
     private String TAPO_DEVICE_NAS_ACCOUNT_NAME;
 
-    @Value("${TAPO_DEVICE_NAS_ACCOUNT_PWD}")
+    @Value("${TAPO_DEVICE_NAS_ACCOUNT_PWD:}")
     private String TAPO_DEVICE_NAS_ACCOUNT_PWD;
 
     private Map<String, Object> envMap;
@@ -46,11 +48,21 @@ public class EnvironmentService {
     }
 
     private List<String> parseKasaIps() {
+        if (KASA_SMART_PLUG_IPS == null || KASA_SMART_PLUG_IPS.trim().isEmpty()) {
+            log.warn("Kasa Smart Plug IPs are not configured (KASA_SMART_PLUG_IPS is missing or empty).");
+            return new ArrayList<>();
+        }
         List<String> ips = Arrays.asList(KASA_SMART_PLUG_IPS.split(","));
         return ips;
     }
 
     private List<TapoAccount> parseTapoAccounts() {
+        if (TAPO_CAMERAS_IPS == null || TAPO_CAMERAS_IPS.trim().isEmpty() ||
+                TAPO_DEVICE_NAS_ACCOUNT_NAME == null || TAPO_DEVICE_NAS_ACCOUNT_NAME.trim().isEmpty() ||
+                TAPO_DEVICE_NAS_ACCOUNT_PWD == null || TAPO_DEVICE_NAS_ACCOUNT_PWD.trim().isEmpty()) {
+            log.warn("Tapo configuration settings are missing or incomplete.");
+            return new ArrayList<>();
+        }
         List<String> ips = Arrays.asList(TAPO_CAMERAS_IPS.split(","));
         List<String> accountNames = Arrays.asList(TAPO_DEVICE_NAS_ACCOUNT_NAME.split(" "));
         List<String> pwds = Arrays.asList(TAPO_DEVICE_NAS_ACCOUNT_PWD.split(" "));
@@ -64,6 +76,9 @@ public class EnvironmentService {
                         .accountPwd(pwds.get(i))
                         .build());
             }
+        } else {
+            log.error("Tapo configuration has mismatched lengths: ips count={}, accountNames count={}, pwds count={}",
+                    ips.size(), accountNames.size(), pwds.size());
         }
         return tapoAccounts;
     }

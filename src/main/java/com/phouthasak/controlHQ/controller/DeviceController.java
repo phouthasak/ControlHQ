@@ -1,5 +1,6 @@
 package com.phouthasak.controlHQ.controller;
 
+import com.phouthasak.controlHQ.model.dto.BaseResponse;
 import com.phouthasak.controlHQ.model.dto.Device;
 import com.phouthasak.controlHQ.service.DeviceManagementService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,18 +22,20 @@ public class DeviceController {
     private DeviceManagementService deviceManagementService;
 
     @RequestMapping(value = "", method = RequestMethod.GET)
-    public ResponseEntity getDevices() {
+    public ResponseEntity<BaseResponse> getDevices() {
         List<Device> devices = deviceManagementService.getDevices();
         Map<String, Object> responseMap = new HashMap<>();
         responseMap.put("devices", devices);
-        return ResponseEntity.status(HttpStatus.OK).body(responseMap);
+        BaseResponse baseResponse = new BaseResponse(responseMap, null, true);
+        return ResponseEntity.status(HttpStatus.OK).body(baseResponse);
     }
 
     @RequestMapping(value = "/{deviceId}", method = RequestMethod.GET)
-    public ResponseEntity getDevice(@PathVariable("deviceId") String deviceId) {
+    public ResponseEntity<BaseResponse> getDevice(@PathVariable("deviceId") String deviceId) {
         Device device = deviceManagementService.getDeviceInfo(deviceId);
         Map<String, Object> responseMap = new HashMap<>();
         responseMap.put("device", device);
-        return ResponseEntity.status(HttpStatus.OK).body(responseMap);
+        BaseResponse baseResponse = new BaseResponse(responseMap, null, true);
+        return ResponseEntity.status(HttpStatus.OK).body(baseResponse);
     }
 }

@@ -29,6 +29,11 @@ replay_pid*
 
 # environment files
 .env
+jwt_secret.txt
+
+# AI
+.agents
+.mvn
 
 # mac files
 .DS_Store

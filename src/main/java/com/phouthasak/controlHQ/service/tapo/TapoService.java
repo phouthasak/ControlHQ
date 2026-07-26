@@ -2,6 +2,8 @@ package com.phouthasak.controlHQ.service.tapo;
 
 import com.phouthasak.controlHQ.domain.tapo.TapoAccount;
 import com.phouthasak.controlHQ.domain.tapo.TapoDeviceInfo;
+import com.phouthasak.controlHQ.domain.DeviceStatus;
+import com.phouthasak.controlHQ.domain.DeviceType;
 import com.phouthasak.controlHQ.model.dto.Device;
 import com.phouthasak.controlHQ.service.EnvironmentService;
 import com.phouthasak.controlHQ.util.Constants;
@@ -17,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -36,32 +39,60 @@ public class TapoService {
         List<TapoAccount> accounts = environmentService.getTapoAccounts();
 
         for (TapoAccount account : accounts) {
-
-            Device device = null;
+            String deviceId = null;
             try {
                 TapoDeviceInfo tapoDeviceInfo = getDeviceInfo(account);
-                device = tapoDeviceInfo.toDevice();
+                if (tapoDeviceInfo != null) {
+                    Device device = tapoDeviceInfo.toDevice();
+                    if (device != null) {
+                        deviceId = device.getId();
+                        log.info("Successfully connected to Tapo camera at {} during startup", account.getIp());
+                    } else {
+                        throw new Exception("toDevice returned null");
+                    }
+                } else {
+                    throw new Exception("Received null response from device");
+                }
             } catch (Exception ex) {
-                log.error("Error setting up device info map: " + account.getIp(), ex);
+                log.warn("Failed to connect to Tapo camera at {} during startup. Marking as offline.", account.getIp(), ex);
             }
-
-            if (Objects.nonNull(device)) {
-                deviceMap.put(device.getId(), account);
+            if (deviceId == null) {
+                deviceId = UUID.randomUUID().toString();
             }
+            // Always map the ID to the TapoAccount so it can be queried/displayed
+            deviceMap.put(deviceId, account);
         }
     }
 
     public List<Device> listDevices() {
         List<Device> devices = new ArrayList<>();
 
-        try {
-            List<String> deviceIds = new ArrayList<>(deviceMap.keySet());
-            for (String deviceId : deviceIds) {
-                TapoDeviceInfo tapoDeviceInfo = getDeviceInfo(deviceMap.get(deviceId));
-                devices.add(tapoDeviceInfo.toDevice());
+        for (Map.Entry<String, TapoAccount> entry : deviceMap.entrySet()) {
+            String deviceId = entry.getKey();
+            TapoAccount account = entry.getValue();
+            Device device = null;
+            try {
+                TapoDeviceInfo tapoDeviceInfo = getDeviceInfo(account);
+                if (tapoDeviceInfo != null) {
+                    device = tapoDeviceInfo.toDevice();
+                    if (device != null) {
+                        device.setId(deviceId);
+                        device.setStatus(DeviceStatus.SUCCESS);
+                    }
+                }
+            } catch (Exception ex) {
+                log.error("Error updating Tapo device state for IP: " + account.getIp(), ex);
             }
-        } catch (Exception ex) {
-            log.error("Error getting list of devices: ", ex);
+
+            if (device == null) {
+                device = Device.builder()
+                        .id(deviceId)
+                        .type(DeviceType.CAMERA)
+                        .name("Tapo Camera (" + account.getIp() + ")")
+                        .status(DeviceStatus.FAILED)
+                        .build();
+            }
+            devices.add(device);
         }
 
         return devices;
@@ -81,6 +112,7 @@ public class TapoService {
 
         try (FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(rtspUrl)) {
             grabber.setOption("rtsp_transport", "tcp");
+            grabber.setOption("stimeout", "5000000"); // 5 seconds connection timeout
             grabber.start();
 
             log.info("Camera connected successfully!: " + tapoAccount.getIp());

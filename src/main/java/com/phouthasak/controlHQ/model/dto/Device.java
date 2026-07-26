@@ -1,6 +1,8 @@
 package com.phouthasak.controlHQ.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.phouthasak.controlHQ.domain.DeviceType;
+import com.phouthasak.controlHQ.domain.DeviceStatus;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,7 +22,9 @@ public class Device implements Serializable {
     private Long longitude;
     private int relayState;
     private int errorCode;
+    private DeviceStatus status;
 
+    @JsonIgnore
     public boolean isOn() {
         return this.relayState == 1;
     }

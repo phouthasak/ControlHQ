@@ -1,5 +1,6 @@
 package com.phouthasak.controlHQ.controller;
 
+import com.phouthasak.controlHQ.model.dto.BaseResponse;
 import com.phouthasak.controlHQ.model.dto.Device;
 import com.phouthasak.controlHQ.model.dto.kasa.KasaDto;
 import com.phouthasak.controlHQ.service.DeviceManagementService;
@@ -33,6 +34,7 @@ public class KasaController {
         device = deviceManagementService.updateDevice(device);
         Map<String, Object> responseMap = new HashMap<>();
         responseMap.put("device", device);
-        return ResponseEntity.status(HttpStatus.OK).body(responseMap);
+        BaseResponse baseResponse = new BaseResponse(responseMap, null, true);
+        return ResponseEntity.status(HttpStatus.OK).body(baseResponse);
     }
 }
