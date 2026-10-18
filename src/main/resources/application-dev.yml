@@ -5,6 +5,13 @@ spring:
     import:
       - optional:file:.env[.properties]
       - configtree:/run/secrets/
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{transactionId}] - %msg%n"
